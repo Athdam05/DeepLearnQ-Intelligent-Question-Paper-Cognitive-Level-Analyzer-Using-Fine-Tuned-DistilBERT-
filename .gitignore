@@ -44,3 +44,6 @@ Thumbs.db
 
 # Model weights exceed GitHub's 100MB limit (255MB); regenerate via backend/training/train.py
 artifacts/model/model.safetensors
+
+# Local backup of the earlier 900-question pilot model
+artifacts/backup_subset_run/

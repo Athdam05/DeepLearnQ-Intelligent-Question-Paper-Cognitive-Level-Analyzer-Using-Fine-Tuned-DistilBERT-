@@ -226,14 +226,22 @@ The project includes pre-trained weights in `artifacts/model/` and real evaluati
 
 However, if you wish to run fine-tuning yourself:
 
-### Quick CPU Training (Balanced 900 Question Sample, ~5 minutes)
+### Full Dataset Training (8,758 Questions, ~55 minutes on CPU)
+This is how the shipped model was trained.
+```bash
+python -m backend.training.train --epochs 3 --batch_size 16
+```
+
+### Quick CPU Pilot (Balanced 900 Question Sample, ~5 minutes)
+Useful for checking the pipeline end to end. Too little data for good accuracy (60.00% on its 135-question test split).
 ```bash
 python -m backend.training.train --epochs 3 --batch_size 16 --max_samples_per_class 150
 ```
 
-### Full Dataset Training (8,758 Questions, Recommended with GPU)
+### Baselines (Keyword Rules and TF-IDF, seconds)
+Trains keyword-rule, TF-IDF + Logistic Regression and TF-IDF + Linear SVM baselines on the identical split.
 ```bash
-python -m backend.training.train --epochs 3 --batch_size 16
+python -m backend.training.baseline
 ```
 
 ### Run Evaluation on Held-Out Test Set
@@ -300,5 +308,5 @@ For demonstration to faculty or evaluators:
 ## 11. Academic Integrity Statement
 
 - **Real Deep Learning:** Predictions are computed via actual forward passes through fine-tuned DistilBERT weights, not mocked or rule-based heuristics.
-- **Genuine Metrics:** All evaluation figures (60.00% accuracy, 0.5789 macro-F1) reflect actual measurements on a strictly held-out test split of 135 unseen questions.
+- **Genuine Metrics:** All evaluation figures (81.13% accuracy, 0.8357 macro-F1) reflect actual measurements on a strictly held-out test split of 1,314 unseen questions. On the same split, the best baseline (TF-IDF + Linear SVM) reaches 77.17% accuracy and 0.7959 macro-F1.
 - **Offline & Private:** Operates entirely locally without sending exam papers to paid third-party generative AI APIs.

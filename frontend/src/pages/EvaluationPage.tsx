@@ -376,7 +376,7 @@ export const EvaluationPage: React.FC = () => {
             <strong>Stratified Splitting:</strong> The dataset was split 70% train, 15% validation, and 15% test with stratification across all 6 classes to maintain identical class ratios without data leakage.
           </li>
           <li>
-            <strong>Held-Out Verification:</strong> The metrics and confusion matrix shown above were evaluated strictly on the 135 unseen test questions.
+            <strong>Held-Out Verification:</strong> The metrics and confusion matrix shown above were evaluated strictly on the {m.test_samples} unseen test questions.
           </li>
           <li>
             <strong>Training Duration:</strong> {m.training_time_seconds ? `${(m.training_time_seconds / 60).toFixed(1)} minutes` : '5.3 minutes'} on CPU with AdamW optimizer (learning rate 3e-5).

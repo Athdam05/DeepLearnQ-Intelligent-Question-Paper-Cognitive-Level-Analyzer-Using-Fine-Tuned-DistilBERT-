@@ -10,7 +10,7 @@
 
 In outcome-based education (OBE) frameworks mandated by accreditation bodies (such as NBA, NAAC, and ABET), higher education institutions must balance examination question papers across the six cognitive complexity orders of Bloom's Revised Taxonomy: *Remember*, *Understand*, *Apply*, *Analyze*, *Evaluate*, and *Create*. Traditional paper moderation relies on manual instructor tagging, which is slow, subjective, and prone to inter-rater discrepancies. 
 
-This project introduces **DeepLearnQ**, an end-to-end deep learning system that ingests examination question papers in PDF format or raw text, extracts discrete questions using heuristic boundary detection, and classifies each question across the six Bloom levels using a fine-tuned **DistilBERT** transformer classifier. The model was trained with Cross-Entropy Loss and AdamW on a curated corpus of 8,758 validated examination questions. Evaluated on a strictly held-out test set, the model achieves **60.00% 6-class test accuracy** and a **macro-F1 score of 0.5789**, significantly outperforming baseline bag-of-words and keyword rule heuristics. The system features a responsive React dashboard with Recharts cognitive distribution visualizations, low-confidence prediction flagging, interactive confusion matrix heatmaps, and downloadable CSV reports.
+This project introduces **DeepLearnQ**, an end-to-end deep learning system that ingests examination question papers in PDF format or raw text, extracts discrete questions using heuristic boundary detection, and classifies each question across the six Bloom levels using a fine-tuned **DistilBERT** transformer classifier. The model was trained with Cross-Entropy Loss and AdamW on a curated corpus of 8,758 validated examination questions (6,130 training, 1,314 validation, 1,314 test). Evaluated on the strictly held-out test set of 1,314 questions, the model achieves **81.13% 6-class test accuracy** and a **macro-F1 score of 0.8357**, outperforming a TF-IDF + linear SVM baseline (77.17%, macro-F1 0.7959) and a keyword-rule baseline (45.89%) measured on the identical split. The system features a responsive React dashboard with Recharts cognitive distribution visualizations, low-confidence prediction flagging, interactive confusion matrix heatmaps, and downloadable CSV reports.
 
 ---
 
@@ -91,10 +91,10 @@ flowchart TD
   - `Analyze`: 1,291 (14.7%)
   - `Create`: 800 (9.1%)
   - `Evaluate`: 780 (8.9%)
-- **Experimental Balanced Split (CPU Fine-Tuning):**
-  - Subsampled 150 instances per class (900 balanced questions).
-  - Stratified 70% Train (630 samples), 15% Validation (135 samples), 15% Held-Out Test (135 samples).
+- **Split (full dataset, seed 42):**
+  - Stratified 70% Train (6,130 questions), 15% Validation (1,314), 15% Held-Out Test (1,314).
   - Deduplication applied to ensure no question leakage across splits.
+- **Earlier pilot run:** a balanced 150-per-class subsample (900 questions; 630 train / 135 validation / 135 test) was used for a quick 5-minute CPU run. It reached only 60.00% accuracy and was beaten by a TF-IDF + linear SVM baseline (68.89%) on the same split, which showed the transformer was data-starved and motivated full-dataset training.
 
 ---
 
@@ -112,60 +112,75 @@ flowchart TD
 | Warmup Steps | 10% of total training steps |
 | Epochs | 3 |
 | Training Hardware | CPU (PyTorch 2.11) |
-| Training Execution Time | 5.28 minutes |
+| Training Execution Time | 55.32 minutes (3 epochs, 6,130 questions) |
 
 ---
 
 ## 8. Real Measured Results & Evaluation
 
-The following metrics were evaluated on the held-out test split of 135 unseen questions:
+The following metrics were evaluated on the held-out test split of 1,314 unseen questions (`artifacts/metrics/eval_results.json`):
 
 ### Overall Metrics
-- **Test Overall Accuracy:** 60.00%
-- **Macro-Averaged F1-Score:** 0.5789
-- **Macro-Averaged Precision:** 0.5999
-- **Macro-Averaged Recall:** 0.6008
-- **Weighted F1-Score:** 0.5781
-- **Test Cross-Entropy Loss:** 1.1739
+- **Test Overall Accuracy:** 81.13%
+- **Macro-Averaged F1-Score:** 0.8357
+- **Macro-Averaged Precision:** 0.8492
+- **Macro-Averaged Recall:** 0.8261
+- **Weighted F1-Score:** 0.8117
+- **Test Cross-Entropy Loss:** 0.5650
+
+### Baseline Comparison (identical split, same 1,314 test questions)
+Baselines are produced by `python -m backend.training.baseline` (`artifacts/metrics/baseline_results_full.json`).
+
+| Model | Test Accuracy | Macro-F1 |
+|---|---|---|
+| Keyword rules (first Bloom action verb found) | 45.89% | 0.4529 |
+| TF-IDF (1–2 grams) + Logistic Regression | 74.66% | 0.7585 |
+| TF-IDF (1–2 grams) + Linear SVM | 77.17% | 0.7959 |
+| **Fine-tuned DistilBERT** | **81.13%** | **0.8357** |
+
+DistilBERT beats the strongest baseline by about 4 accuracy points and 0.04 macro-F1. On the earlier 630-question pilot, the order was reversed (TF-IDF + SVM 68.89% vs DistilBERT 60.00%), so the transformer's advantage depends on having enough training data.
 
 ### Per-Class Performance
 | Cognitive Level | Precision | Recall | F1-Score | Support (Test Items) |
 |---|---|---|---|---|
-| **Remember (BT1)** | 75.00% | 54.55% | 0.6316 | 22 |
-| **Understand (BT2)** | 48.15% | 59.09% | 0.5306 | 22 |
-| **Apply (BT3)** | 51.35% | 82.61% | 0.6333 | 23 |
-| **Analyze (BT4)** | 37.50% | 13.04% | 0.1935 | 23 |
-| **Evaluate (BT5)** | 85.00% | 73.91% | 0.7907 | 23 |
-| **Create (BT6)** | 62.96% | 77.27% | 0.6939 | 22 |
+| **Remember (BT1)** | 74.77% | 84.24% | 0.7922 | 387 |
+| **Understand (BT2)** | 72.12% | 71.85% | 0.7199 | 270 |
+| **Apply (BT3)** | 86.24% | 83.19% | 0.8468 | 226 |
+| **Analyze (BT4)** | 87.42% | 71.65% | 0.7875 | 194 |
+| **Evaluate (BT5)** | 89.83% | 90.60% | 0.9021 | 117 |
+| **Create (BT6)** | 99.12% | 94.17% | 0.9658 | 120 |
 
 ### Epoch Progression
 | Epoch | Train Loss | Validation Loss | Validation Accuracy | Validation Macro-F1 |
 |---|---|---|---|---|
-| Epoch 1 | 1.7456 | 1.6222 | 39.26% | 0.3426 |
-| Epoch 2 | 1.4155 | 1.3000 | 58.52% | 0.5613 |
-| Epoch 3 | 1.1199 | 1.2083 | 60.00% | 0.5738 |
+| Epoch 1 | 1.0573 | 0.6709 | 77.47% | 0.7868 |
+| Epoch 2 | 0.5208 | 0.6050 | 79.60% | 0.8086 |
+| Epoch 3 | 0.3642 | 0.6199 | 79.91% | 0.8167 |
+
+The checkpoint with the best validation macro-F1 (epoch 3) was kept. Validation loss rose slightly in epoch 3 while macro-F1 still improved, an early sign of overfitting; more epochs would need early stopping.
 
 ### Confusion Matrix (Test Split)
 ```
 Actual \ Predicted   Remember  Understand   Apply   Analyze  Evaluate   Create
-Remember                12          1         7        0        0        2
-Understand               1         13         5        1        1        1
-Apply                    1          1        19        1        0        1
-Analyze                  2          9         3        3        1        5
-Evaluate                 0          2         0        3       17        1
-Create                   0          1         3        0        1       17
+Remember               326         46         8        6        1        0
+Understand              64        194         4        6        2        0
+Apply                   18          9       188        6        5        0
+Analyze                 26         15        11      139        3        0
+Evaluate                 1          4         3        2      106        1
+Create                   1          1         4        0        1      113
 ```
 
 **Key Findings:**
-1. **High Discrimination on Extremes:** *Evaluate* (F1: 0.7907), *Create* (F1: 0.6939), and *Apply* (Recall: 82.61%) achieved strong classification due to explicit operative action patterns.
-2. **Adjacent Class Ambiguity:** *Analyze* questions were most frequently confused with *Understand* and *Create*, reflecting known pedagogical overlap where analyzing a system borders on explaining its behavior or constructing an alternative.
+1. **Higher-order levels are easiest:** *Create* (F1: 0.9658) and *Evaluate* (F1: 0.9021) are classified most reliably, because their questions use distinctive operative verbs and structures (design, justify, critique).
+2. **Remember vs Understand is the main confusion:** 64 *Understand* questions were predicted as *Remember* and 46 the other way. Both are lower-order recall/explanation tasks with overlapping wording ("what is", "describe").
+3. **Analyze improved most with more data:** recall rose from 13.04% on the 630-question pilot to 71.65%. Its remaining errors fall mostly into *Remember* (26) and *Understand* (15), reflecting real pedagogical overlap between analysing and explaining.
 
 ---
 
 ## 9. Key Viva Voce Questions & Answers
 
 ### Q1: Why not simply use regular expression keyword matching (e.g. matching 'define' or 'explain')?
-**Answer:** Keyword matching fails because natural language questions exhibit contextual polysemy and syntactic inversion. For example, "Define a procedure to synthesize a new compound" contains the word "define" (traditionally Remember) but cognitively requires synthesis (Create). DistilBERT analyzes full bi-directional self-attention across all words, capturing the true semantic task rather than surface vocabulary.
+**Answer:** Keyword matching fails because natural language questions exhibit contextual polysemy and syntactic inversion. For example, "Define a procedure to synthesize a new compound" contains the word "define" (traditionally Remember) but cognitively requires synthesis (Create). DistilBERT analyzes full bi-directional self-attention across all words, capturing the true semantic task rather than surface vocabulary. Measured on the same test split, a keyword-rule baseline reaches only 45.89% accuracy, against 81.13% for DistilBERT.
 
 ### Q2: Why is DistilBERT preferred over full BERT or GPT-based APIs?
 **Answer:**
@@ -177,8 +192,8 @@ Create                   0          1         3        0        1       17
 **Answer:** In multi-class classification, softmax outputs sum to 1.0. When the model is uncertain between two overlapping categories (e.g., probability 0.32 for Understand and 0.34 for Analyze), returning the raw prediction blindly could mislead instructors. DeepLearnQ flags predictions where confidence < 55% for manual faculty review, implementing an AI-assisted human-in-the-loop paradigm.
 
 ### Q4: How is data leakage prevented between training and testing?
-**Answer:** Data leakage occurs when identical or near-identical questions exist in both train and test sets, artificially inflating accuracy. We eliminated this by:
-1. Deduplicating all records prior to splitting.
+**Answer:** Data leakage occurs when identical or near-identical questions exist in both train and test sets, artificially inflating accuracy. We reduced this by:
+1. Removing exact duplicate questions prior to splitting (near-duplicates with small wording changes are not yet detected; see Limitations).
 2. Using stratified random sampling based on label ID to ensure identical class distributions without overlapping items.
 3. Holding out the test set completely from all training, gradient updates, and hyperparameter tuning.
 
@@ -193,6 +208,8 @@ Create                   0          1         3        0        1       17
 1. **Purely Textual Questions:** Mathematical diagrams, circuit schematics, and chemical structures are not parsed for classification.
 2. **Contextual Subject Bias:** Questions from humanities versus engineering may use similar verbs with different cognitive expectations.
 3. **Scanned Documents:** Requires selectable digital PDFs; scanned physical papers need external OCR conversion.
+4. **Near-Duplicate Leakage:** Only exact duplicate questions are removed before splitting; lightly reworded copies could still appear in both train and test sets.
+5. **Remember vs Understand Confusion:** These two levels account for the largest share of test errors (110 of 248 misclassifications).
 
 ### Future Scope:
 1. **OCR Pipeline:** Integrate Tesseract or EasyOCR for direct physical exam paper scanning.

@@ -1,0 +1,23 @@
+{
+  "keyword_rules": {
+    "accuracy": 0.3852,
+    "macro_f1": 0.3983,
+    "train_seconds": 0.01
+  },
+  "tfidf_logreg": {
+    "accuracy": 0.6815,
+    "macro_f1": 0.6849,
+    "train_seconds": 0.14
+  },
+  "tfidf_linear_svm": {
+    "accuracy": 0.6889,
+    "macro_f1": 0.6914,
+    "train_seconds": 0.02
+  },
+  "_split": {
+    "max_samples_per_class": 150,
+    "train": 630,
+    "test": 135,
+    "seed": 42
+  }
+}
