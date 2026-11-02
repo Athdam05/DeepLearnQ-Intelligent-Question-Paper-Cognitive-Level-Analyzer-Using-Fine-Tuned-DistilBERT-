@@ -207,7 +207,7 @@ You need two terminal windows: one for the Flask backend, and one for the React 
 ```bash
 python backend/app.py
 ```
-*Backend runs on `http://127.0.0.1:5000`.*
+*Backend runs on `http://127.0.0.1:5080` (frontend on `http://localhost:5173`).*
 
 ### Terminal 2: Start the Frontend Application
 ```bash

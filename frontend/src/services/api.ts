@@ -8,7 +8,7 @@ import type {
   QuestionPrediction 
 } from '../types';
 
-const API_BASE = 'http://127.0.0.1:5000/api';
+const API_BASE = 'http://127.0.0.1:5080/api';
 
 export const apiService = {
   async getHealth(): Promise<HealthInfo> {
